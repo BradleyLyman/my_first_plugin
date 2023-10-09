@@ -1,47 +1,71 @@
 plugins {
-    id 'java-library'
+  id 'java-library'
 
-    // https://plugins.gradle.org/plugin/io.papermc.paperweight.userdev
-    id("io.papermc.paperweight.userdev") version "1.5.6"
+  // https://plugins.gradle.org/plugin/io.papermc.paperweight.userdev
+  id("io.papermc.paperweight.userdev") version "1.5.6"
 
-    // https://github.com/jpenilla/run-task
-    id("xyz.jpenilla.run-paper") version "2.1.0"
+  // https://github.com/jpenilla/run-task
+  id("xyz.jpenilla.run-paper") version "2.1.0"
 }
 
 repositories {
-    mavenCentral()
-    maven {
-        url "https://repo.papermc.io/repository/maven-public/"
-    }
+  mavenCentral()
+  maven {
+    url "https://repo.papermc.io/repository/maven-public/"
+  }
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+  // Other Dependencies
+  paperweight.paperDevBundle("1.20.2-R0.1-SNAPSHOT")
 
-    // Other Dependencies
-    paperweight.paperDevBundle("1.20.1-R0.1-SNAPSHOT")
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+  testImplementation 'com.github.seeseemelk:MockBukkit-v1.20:3.25.0'
+  testImplementation 'org.assertj:assertj-core:3.24.2'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+configurations.testImplementation {
+    exclude(group: "io.papermc.paper", module: "paper-server")
 }
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(17)
+  }
+}
+
+tasks.named('runServer') {
+  // Configure the Minecraft version for our task.
+  // This is the only required configuration besides applying the plugin.
+  // Your plugin's jar (or shadowJar if present) will be used automatically.
+  minecraftVersion("1.20.2")
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
-}
+dependsOn reobfJar
+  useJUnitPlatform()
 
-tasks.assemble {
-    dependsOn(reobfJar)
-}
-
-tasks {
-  runServer {
-    // Configure the Minecraft version for our task.
-    // This is the only required configuration besides applying the plugin.
-    // Your plugin's jar (or shadowJar if present) will be used automatically.
-    minecraftVersion("1.20.1")
+  testLogging {
+    exceptionFormat = "full"
+    showStackTraces = true
   }
 }
+
+tasks.register('bundleResourcePack', Zip) {
+  dependsOn "processResources"
+
+  archiveFileName = "resource-pack.zip"
+  destinationDirectory = layout.buildDirectory.dir('dist')
+
+  from(layout.buildDirectory.dir("resources/main/")) {
+      include "assets/**"
+      include "pack.mcmeta"
+  }
+}
+
+tasks.named('assemble') {
+  dependsOn bundleResourcePack
+  dependsOn reobfJar
+}
+
