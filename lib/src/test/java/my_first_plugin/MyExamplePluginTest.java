@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 
 class MyExamplePluginTest {
   private ServerMock server;
+
+  @SuppressWarnings("unused")
   private MyExamplePlugin myPlugin;
 
   @BeforeEach
@@ -41,7 +43,12 @@ class MyExamplePluginTest {
     final ItemStack hammer = player.getInventory().getItem(0);
     final TextComponent displayName = (TextComponent) hammer.getItemMeta()
         .displayName();
-
     assertThat(displayName.content()).isEqualTo("Stone Hammer");
+  }
+
+  @SuppressWarnings("unused")
+  @Test
+  void Tests_Should_Be_Able_To_Reference_NMS() {
+    final net.minecraft.world.item.ItemStack nmsStack = null;
   }
 }
