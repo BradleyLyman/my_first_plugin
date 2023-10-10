@@ -2,6 +2,15 @@
 
 An example plugin for a PaperMC Minecraft server.
 
+## Gradle Tasks
+
+- `runServer`
+  - launch a local paper server which includes the plugin for quick testing
+- `test`
+  - run all unit tests
+- `build`
+  - build the obfuscated jar and resource pack
+
 ## Folder Structure
 
 - `/buildSrc`
