@@ -1,7 +1,3 @@
-import org.gradle.api.artifacts.transform.TransformParameters;
-import java.nio.file.FileSystems;
-import java.nio.file.Files
-
 plugins {
   id 'java-library'
 
@@ -12,6 +8,10 @@ plugins {
   id("xyz.jpenilla.run-paper") version "2.1.0"
 }
 
+apply plugin: PaperNMSUnitTestSupport
+
+def MINECRAFT_VERSION = "1.20.1"
+
 repositories {
   mavenCentral()
   maven {
@@ -19,97 +19,14 @@ repositories {
   }
 }
 
-abstract class RemoveFilesTransform
-    implements TransformAction<RemoveFilesTransform.Parameters>
-{
-  interface Parameters extends TransformParameters {
-    @Input
-    List<String> getFiles()
-    void setFiles(List<String> files)
-  }
-
-  @InputArtifact
-  abstract Provider<FileSystemLocation> getInputArtifact()
-
-  // https://paste.gg/p/syldium/0f00247b5f954fb691d354d85563fe15
-  // https://github.com/MockBukkit/MockBukkit/issues/599
-  @Override
-  void transform(TransformOutputs outputs) {
-    File input = inputArtifact.get().getAsFile();
-    File output = outputs.file(input.getName().replace(".jar", "-transformed.jar"));
-
-    Files.copy(input.toPath(), output.toPath())
-
-    def outURI = output.toURI()
-    def fs = FileSystems.newFileSystem(URI.create("jar:$outURI"), [:])
-
-    fs.withCloseable { zip ->
-      // def myPath = zip.getPath('/META-INF/services')
-      // Files.walk(myPath, 1).each { filename ->
-      //   println("found filename $filename, contents:-")
-      //   if (Files.isReadable(filename) && !Files.isDirectory(filename)) {
-      //     def reader = Files.newBufferedReader(filename)
-      //     reader.lines().each { line ->
-      //       println("| $line")
-      //     }
-      //   }
-      // }
-
-      parameters.files.each { file ->
-        def path = zip.getPath(file)
-        if (Files.exists(path)) {
-          Files.delete(path)
-        }
-      }
-    }
-  }
-}
-
-def artifactType = Attribute.of('artifactType', String)
-def filtered = Attribute.of('filtered', Boolean)
-
 dependencies {
-  attributesSchema {
-    attribute(filtered)
-  }
-  artifactTypes.getByName("jar") {
-    attributes.attribute(filtered, false)
-  }
+  paperweight.paperDevBundle("$MINECRAFT_VERSION-R0.1-SNAPSHOT")
 
-  // Other Dependencies
-  paperweight.paperDevBundle("1.20.1-R0.1-SNAPSHOT")
-
-  testImplementation('org.junit.jupiter:junit-jupiter:5.9.3')
   testImplementation('com.github.seeseemelk:MockBukkit-v1.20:3.31.0')
-
+  testImplementation('org.junit.jupiter:junit-jupiter:5.9.3')
   testImplementation 'org.assertj:assertj-core:3.24.2'
+
   testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-  registerTransform(RemoveFilesTransform) {
-    from.attribute(filtered, false).attribute(artifactType, "jar")
-    to.attribute(filtered, true).attribute(artifactType, "jar")
-    parameters {
-      files = [
-        "/META-INF/services/net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer\$Provider",
-        "/META-INF/services/org.bukkit.plugin.PluginLoader"
-      ]
-    }
-  }
-}
-
-configurations.testRuntimeClasspath.resolutionStrategy.dependencySubstitution {
-  all { DependencySubstitution dependency ->
-    if (
-      dependency.requested.group == "io.papermc.paper" &&
-      dependency.requested.module == "paper-server"
-    ) {
-      dependency.useTarget variant(dependency.requested) {
-        attributes {
-          attribute(filtered, true)
-        }
-      }
-    }
-  }
 }
 
 java {
@@ -119,10 +36,7 @@ java {
 }
 
 tasks.named('runServer') {
-  // Configure the Minecraft version for our task.
-  // This is the only required configuration besides applying the plugin.
-  // Your plugin's jar (or shadowJar if present) will be used automatically.
-  minecraftVersion("1.20.2")
+  minecraftVersion($MINECRAFT_VERSION)
 }
 
 tasks.named('test') {
@@ -141,7 +55,7 @@ tasks.register('bundleResourcePack', Zip) {
   archiveFileName = "resource-pack.zip"
   destinationDirectory = layout.buildDirectory.dir('dist')
 
-  from(layout.buildDirectory.dir("resources/main/")) {
+  from(layout.projectDirectory.dir("resource_pack")) {
       include "assets/**"
       include "pack.mcmeta"
   }
