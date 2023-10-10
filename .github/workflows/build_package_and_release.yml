@@ -29,4 +29,4 @@ jobs:
       uses: johnwbyrd/update-release@v1.0.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        files: ./one-file-you-want-to-release.zip dist/another-file-to-release.exe README.md
+        files: ./lib/build/dist/resource-pack.zip
