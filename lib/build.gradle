@@ -36,7 +36,7 @@ java {
 }
 
 tasks.named('runServer') {
-  minecraftVersion($MINECRAFT_VERSION)
+  minecraftVersion(MINECRAFT_VERSION)
 }
 
 tasks.named('test') {
